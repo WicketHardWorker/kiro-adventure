@@ -19,80 +19,15 @@ const keys = { left: false, right: false };
 let touchStartX = null;
 let touchDir = 0; // -1 left, 0 none, 1 right
 
-// ===== Kiroゴースト スプライト =====
-const kiroFrameA = [
-  [0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0],
-  [0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0],
-  [0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-  [1,1,1,1,1,2,2,1,1,2,2,1,1,1,0,0],
-  [1,1,1,1,1,2,2,1,1,2,2,1,1,1,0,0],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-  [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-  [0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0],
-  [0,0,0,1,1,0,1,1,0,1,1,0,0,0,0,0],
-  [0,0,1,1,0,0,0,1,0,0,1,1,0,0,0,0],
-  [0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0],
-];
-
-const kiroFrameB = [
-  [0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0],
-  [0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0],
-  [0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-  [1,1,1,1,1,2,2,1,1,2,2,1,1,1,0,0],
-  [1,1,1,1,1,2,2,1,1,2,2,1,1,1,0,0],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-  [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-  [0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0],
-  [0,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0],
-  [0,1,1,0,0,0,1,0,0,1,1,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
-];
-
-const kiroDead = [
-  [0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0],
-  [0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0],
-  [0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-  [1,1,1,1,2,1,2,1,2,1,2,1,1,1,0,0],
-  [1,1,1,1,1,2,1,1,1,2,1,1,1,1,0,0],
-  [1,1,1,1,2,1,2,1,2,1,2,1,1,1,0,0],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-  [0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
-  [0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0],
-  [0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0],
-  [0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0],
-];
-
-function drawSprite(sprite, x, y, pixelSize, glowColor) {
-  if (glowColor) { ctx.shadowColor = glowColor; ctx.shadowBlur = 12; }
-  for (let row = 0; row < sprite.length; row++) {
-    for (let col = 0; col < sprite[row].length; col++) {
-      const val = sprite[row][col];
-      if (val === 0) continue;
-      ctx.fillStyle = val === 1 ? '#ffffff' : '#0a0a0a';
-      ctx.fillRect(x + col * pixelSize, y + row * pixelSize, pixelSize, pixelSize);
-    }
-  }
-  ctx.shadowBlur = 0;
-}
+// ===== Kiroゴースト 画像読み込み =====
+const kiroImg = new Image();
+kiroImg.src = 'kiro-ghost.jpg';
+let kiroImgReady = false;
+kiroImg.onload = () => { kiroImgReady = true; };
 
 // ===== Kiroちゃん（左右移動 + ふわふわ）=====
 const kiro = {
-  x: W / 2 - 24, y: H - 90, w: 16 * PX, h: 16 * PX,
+  x: W / 2 - 28, y: H - 90, w: 56, h: 56,
   speed: 4.5, frame: 0, animTimer: 0,
   dead: false, deathAnim: 0, floatOffset: 0,
 
@@ -122,7 +57,6 @@ const kiro = {
     ctx.save();
     const drawX = this.x;
     const drawY = this.y + this.floatOffset;
-    let sprite = this.dead ? kiroDead : (this.frame === 0 ? kiroFrameA : kiroFrameB);
 
     if (this.dead) {
       ctx.globalAlpha = Math.max(0, 1 - this.deathAnim * 0.025);
@@ -139,7 +73,14 @@ const kiro = {
       ctx.fill();
     }
 
-    drawSprite(sprite, drawX, drawY, PX, 'rgba(255,255,255,0.5)');
+    // 画像描画（グロー付き）
+    if (kiroImgReady) {
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+      ctx.shadowBlur = 12;
+      ctx.drawImage(kiroImg, drawX, drawY, this.w, this.h);
+      ctx.shadowBlur = 0;
+    }
+
     ctx.restore();
   }
 };
@@ -389,7 +330,6 @@ function startGame() {
   obstacles = []; particles = []; nextObstacleIn = 60;
   lineNumber = 1; bgScrollOffset = 0;
   kiro.x = W/2 - kiro.w/2; kiro.dead = false; kiro.deathAnim = 0;
-  kiro.frame = 0; kiro.animTimer = 0;
   document.getElementById('start-screen').classList.add('hidden');
   document.getElementById('gameover-screen').classList.add('hidden');
   state = 'playing';
