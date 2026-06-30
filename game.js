@@ -29,9 +29,9 @@ const kiroFrameA = [
   [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
   [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
   [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-  [0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0],
-  [0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,0],
-  [0,1,1,0,0,0,0,1,0,0,0,1,1,0,0,0],
+  [0,0,1,1,0,1,1,1,1,1,0,1,1,0,0,0],
+  [0,1,1,0,0,0,1,1,1,0,0,0,1,1,0,0],
+  [0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0],
 ];
 
 const kiroFrameB = [
@@ -48,9 +48,9 @@ const kiroFrameB = [
   [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
   [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
   [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-  [0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0],
-  [0,1,1,0,0,1,1,0,0,1,1,0,0,0,0,0],
-  [1,1,0,0,0,0,1,0,0,0,0,1,1,0,0,0],
+  [0,0,0,1,1,0,1,1,1,0,1,1,0,0,0,0],
+  [0,0,1,1,0,0,0,1,0,0,0,1,1,0,0,0],
+  [0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0],
 ];
 
 // 死亡フレーム（×目）
@@ -92,12 +92,14 @@ function drawSprite(sprite, x, y, pixelSize, glowColor) {
 
 
 
-// ===== Kiroちゃん =====
+// ===== Kiroちゃん（おばけだから浮いてる！）=====
+const FLOAT_HEIGHT = 30; // 地面からの浮遊高さ
 const kiro = {
-  x: 80, y: GROUND_Y, w: 16*PX, h: 16*PX,
-  vy: 0, gravity: 0.6, jumpForce: -13,
+  x: 80, y: GROUND_Y - FLOAT_HEIGHT, w: 16*PX, h: 16*PX,
+  vy: 0, gravity: 0.5, jumpForce: -12,
   onGround: true, frame: 0, animTimer: 0,
   dead: false, deathAnim: 0, floatOffset: 0,
+  baseY: GROUND_Y - FLOAT_HEIGHT, // 浮遊時のベース位置
 
   jump() {
     if (this.onGround && !this.dead) {
@@ -110,12 +112,12 @@ const kiro = {
     if (this.dead) { this.deathAnim++; return; }
     this.vy += this.gravity;
     this.y += this.vy;
-    if (this.y >= GROUND_Y) { this.y = GROUND_Y; this.vy = 0; this.onGround = true; }
-    // ふわふわ浮遊
-    this.floatOffset = Math.sin(frameCount * 0.08) * 3;
-    // アニメーション切替
+    if (this.y >= this.baseY) { this.y = this.baseY; this.vy = 0; this.onGround = true; }
+    // ゆったりふわふわ浮遊（上下に揺れる）
+    this.floatOffset = Math.sin(frameCount * 0.04) * 6;
+    // アニメーション切替（裾のひらひら）
     this.animTimer++;
-    if (this.animTimer > 12) { this.animTimer = 0; this.frame = 1 - this.frame; }
+    if (this.animTimer > 10) { this.animTimer = 0; this.frame = 1 - this.frame; }
   },
 
   draw() {
@@ -130,6 +132,14 @@ const kiro = {
       ctx.translate(this.x + this.w/2, drawY + this.h/2);
       ctx.rotate(this.deathAnim * 0.1);
       ctx.translate(-(this.x + this.w/2), -(drawY + this.h/2));
+    }
+
+    // おばけの影（地面に薄い楕円）
+    if (!this.dead) {
+      ctx.fillStyle = 'rgba(139, 92, 246, 0.2)';
+      ctx.beginPath();
+      ctx.ellipse(this.x + this.w/2, GROUND_Y - 2, 14, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     drawSprite(sprite, this.x, drawY, PX, 'rgba(255,255,255,0.6)');
@@ -454,7 +464,7 @@ function gameLoop() {
 function startGame() {
   score = 0; frameCount = 0; speed = 4;
   obstacles = []; particles = []; nextObstacleIn = 90; groundOffset = 0;
-  kiro.y = GROUND_Y; kiro.vy = 0; kiro.onGround = true;
+  kiro.y = kiro.baseY; kiro.vy = 0; kiro.onGround = true;
   kiro.dead = false; kiro.deathAnim = 0; kiro.frame = 0; kiro.animTimer = 0;
   document.getElementById('start-screen').classList.add('hidden');
   document.getElementById('gameover-screen').classList.add('hidden');
