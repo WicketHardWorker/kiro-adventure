@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kiroちゃんアドベンチャー</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+    <div id="score-display">スコア: <span id="score">0</span></div>
+    <div id="hi-score-display">ベスト: <span id="hi-score">0</span></div>
+    <canvas id="game-canvas" width="800" height="300"></canvas>
+    <div id="start-screen" class="overlay">
+      <div class="overlay-content">
+        <h1>🐱 Kiroちゃん<br>アドベンチャー</h1>
+        <p class="sub">バグをよけてコードの世界を駆け抜けろ！</p>
+        <button id="start-btn" class="btn">スタート！</button>
+        <p class="hint">スペース / ↑ / タップでジャンプ</p>
+      </div>
+    </div>
+    <div id="gameover-screen" class="overlay hidden">
+      <div class="overlay-content">
+        <h2>💥 ゲームオーバー</h2>
+        <p id="final-score-text">スコア: 0</p>
+        <p id="new-record" class="new-record hidden">🎉 新記録！</p>
+        <button id="retry-btn" class="btn">もう一度！</button>
+      </div>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
