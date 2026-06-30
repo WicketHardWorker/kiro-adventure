@@ -3,31 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kiroちゃんアドベンチャー</title>
+  <title>House of Kiro - スパゲッティコードの呪い</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="game-container">
-    <div id="score-display">スコア: <span id="score">0</span></div>
-    <div id="hi-score-display">ベスト: <span id="hi-score">0</span></div>
+    <div id="score-display">LINES: <span id="score">0</span></div>
+    <div id="hi-score-display">BEST: <span id="hi-score">0</span></div>
+
     <canvas id="game-canvas" width="800" height="300"></canvas>
+
+    <!-- スタート画面 -->
     <div id="start-screen" class="overlay">
       <div class="overlay-content">
-        <h1>🐱 Kiroちゃん<br>アドベンチャー</h1>
-        <p class="sub">バグをよけてコードの世界を駆け抜けろ！</p>
-        <button id="start-btn" class="btn">スタート！</button>
-        <p class="hint">スペース / ↑ / タップでジャンプ</p>
+        <div class="ghost-icon float-anim">👻</div>
+        <h1>HOUSE OF KIRO</h1>
+        <p class="sub">スパゲッティコードの呪いから逃げろ！<br>レガシーコードの闇を駆け抜けろ...</p>
+        <button id="start-btn" class="btn">ENTER IF YOU DARE</button>
+        <p class="hint">SPACE / ↑ / TAP で JUMP</p>
       </div>
     </div>
+
+    <!-- ゲームオーバー画面 -->
     <div id="gameover-screen" class="overlay hidden">
       <div class="overlay-content">
-        <h2>💥 ゲームオーバー</h2>
-        <p id="final-score-text">スコア: 0</p>
-        <p id="new-record" class="new-record hidden">🎉 新記録！</p>
-        <button id="retry-btn" class="btn">もう一度！</button>
+        <h2>CONSUMED BY<br>SPAGHETTI CODE</h2>
+        <p id="final-score-text">0 Lines Survived</p>
+        <p id="new-record" class="new-record hidden">NEW RECORD!</p>
+        <button id="retry-btn" class="btn">TRY AGAIN</button>
       </div>
     </div>
   </div>
+
   <script src="game.js"></script>
 </body>
 </html>
