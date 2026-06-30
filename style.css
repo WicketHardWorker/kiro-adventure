@@ -12,7 +12,7 @@ body {
   overflow: hidden;
 }
 
-#game-container { position: relative; width: 800px; }
+#game-container { position: relative; width: 400px; }
 
 #score-display, #hi-score-display {
   position: absolute; top: -36px;
@@ -34,7 +34,6 @@ body {
   image-rendering: pixelated;
 }
 
-/* ===== オーバーレイ ===== */
 .overlay {
   position: absolute; inset: 0;
   background: rgba(10, 2, 21, 0.92);
@@ -46,40 +45,35 @@ body {
 .overlay-content { text-align: center; color: #fff; padding: 20px; }
 
 .overlay-content h1 {
-  font-size: 22px; line-height: 1.6; margin-bottom: 16px;
+  font-size: 20px; line-height: 1.6; margin-bottom: 16px;
   color: #c084fc;
   text-shadow: 0 0 20px rgba(168, 85, 247, 0.8), 0 0 40px rgba(139, 92, 246, 0.4);
 }
-
 .overlay-content h2 {
-  font-size: 18px; margin-bottom: 16px;
+  font-size: 14px; margin-bottom: 16px; line-height: 1.8;
   color: #ef4444;
   text-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
 }
-
 .sub {
-  font-size: 9px; color: #a78bfa; margin-bottom: 24px;
-  opacity: 0.85; line-height: 1.8;
+  font-size: 8px; color: #a78bfa; margin-bottom: 24px;
+  opacity: 0.85; line-height: 2;
 }
-
 #final-score-text {
-  font-size: 14px; color: #4ade80; margin-bottom: 10px;
+  font-size: 12px; color: #4ade80; margin-bottom: 10px;
   text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
 }
-
 .new-record {
-  font-size: 12px; color: #fbbf24; margin-bottom: 14px;
+  font-size: 11px; color: #fbbf24; margin-bottom: 14px;
   animation: flicker 0.5s ease-in-out infinite alternate;
 }
 .new-record.hidden { display: none; }
 
-/* ===== ボタン ===== */
 .btn {
   background: transparent;
   color: #c084fc;
   border: 2px solid #8b5cf6;
-  padding: 12px 32px;
-  font-size: 12px;
+  padding: 12px 28px;
+  font-size: 10px;
   font-family: 'Press Start 2P', monospace;
   border-radius: 2px;
   cursor: pointer;
@@ -96,8 +90,7 @@ body {
 .btn:active { transform: scale(0.97); }
 
 .hint {
-  font-size: 8px; color: rgba(167, 139, 250, 0.5); margin-top: 10px;
-  line-height: 1.6;
+  font-size: 7px; color: rgba(167, 139, 250, 0.5); margin-top: 10px; line-height: 1.8;
 }
 
 .ghost-icon {
@@ -105,26 +98,20 @@ body {
   filter: drop-shadow(0 0 20px rgba(255,255,255,0.5));
 }
 
-/* ===== アニメーション ===== */
 @keyframes flicker {
   from { opacity: 1; text-shadow: 0 0 10px rgba(251,191,36,0.8); }
   to   { opacity: 0.7; text-shadow: 0 0 3px rgba(251,191,36,0.3); }
 }
-
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
 }
-
 .float-anim { animation: float 2s ease-in-out infinite; }
 
-/* ===== レスポンシブ ===== */
-@media (max-width: 840px) {
+@media (max-width: 440px) {
   #game-container { width: 100vw; }
   #game-canvas { width: 100vw; height: auto; border-radius: 0; }
   #score-display, #hi-score-display { top: 4px; font-size: 9px; }
   #score-display { left: 8px; }
   #hi-score-display { right: 8px; }
-  .overlay-content h1 { font-size: 16px; }
-  .sub { font-size: 8px; }
 }

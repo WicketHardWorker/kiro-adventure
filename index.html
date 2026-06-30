@@ -11,20 +11,18 @@
     <div id="score-display">LINES: <span id="score">0</span></div>
     <div id="hi-score-display">BEST: <span id="hi-score">0</span></div>
 
-    <canvas id="game-canvas" width="800" height="300"></canvas>
+    <canvas id="game-canvas" width="400" height="600"></canvas>
 
-    <!-- スタート画面 -->
     <div id="start-screen" class="overlay">
       <div class="overlay-content">
         <div class="ghost-icon float-anim">👻</div>
         <h1>HOUSE OF KIRO</h1>
-        <p class="sub">スパゲッティコードの呪いから逃げろ！<br>レガシーコードの闇を駆け抜けろ...</p>
+        <p class="sub">スパゲッティコードの呪いから逃げろ！<br>上から降ってくるレガシーコードを避けろ...</p>
         <button id="start-btn" class="btn">ENTER IF YOU DARE</button>
-        <p class="hint">SPACE / ↑ / TAP で JUMP</p>
+        <p class="hint">← → / A D / SWIPE で移動</p>
       </div>
     </div>
 
-    <!-- ゲームオーバー画面 -->
     <div id="gameover-screen" class="overlay hidden">
       <div class="overlay-content">
         <h2>CONSUMED BY<br>SPAGHETTI CODE</h2>

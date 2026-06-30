@@ -1,280 +1,212 @@
 // ===================================================
 //  House of Kiro - スパゲッティコードの呪い
-//  8bit pixel art style
+//  縦スクロール × 8bit × コードエディタ風
 // ===================================================
 
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
-const W = canvas.width, H = canvas.height;
-const GROUND_Y = H - 50;
-const PX = 3; // ピクセルサイズ（8bit感）
+const W = canvas.width;  // 400
+const H = canvas.height; // 600
+const PX = 3;
 
-let state = 'idle', score = 0, hiScore = 0, frameCount = 0, speed = 4;
-let obstacles = [], particles = [], groundOffset = 0, nextObstacleIn = 90;
-let flashTimer = 0; // 稲光
+let state = 'idle', score = 0, hiScore = 0, frameCount = 0, speed = 2.5;
+let obstacles = [], particles = [], nextObstacleIn = 60;
+let flashTimer = 0;
+let lineNumber = 1; // 行番号
 
-// ===== Kiroゴースト スプライトデータ =====
-// 0=透明, 1=白(体), 2=黒(目)
+// ===== 入力管理 =====
+const keys = { left: false, right: false };
+let touchStartX = null;
+let touchDir = 0; // -1 left, 0 none, 1 right
+
+// ===== Kiroゴースト スプライト =====
 const kiroFrameA = [
-  [0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0],
-  [0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0],
-  [0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+  [0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0],
+  [0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0],
+  [0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+  [1,1,1,1,1,2,2,1,1,2,2,1,1,1,0,0],
+  [1,1,1,1,1,2,2,1,1,2,2,1,1,1,0,0],
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-  [1,1,1,1,1,1,2,2,1,1,2,2,1,1,1,0],
-  [1,1,1,1,1,1,2,2,1,1,2,2,1,1,1,0],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
   [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
   [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-  [0,0,1,1,0,1,1,1,1,1,0,1,1,0,0,0],
-  [0,1,1,0,0,0,1,1,1,0,0,0,1,1,0,0],
-  [0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0],
+  [0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0],
+  [0,0,0,1,1,0,1,1,0,1,1,0,0,0,0,0],
+  [0,0,1,1,0,0,0,1,0,0,1,1,0,0,0,0],
+  [0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0],
 ];
 
 const kiroFrameB = [
-  [0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0],
-  [0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0],
-  [0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+  [0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0],
+  [0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0],
+  [0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+  [1,1,1,1,1,2,2,1,1,2,2,1,1,1,0,0],
+  [1,1,1,1,1,2,2,1,1,2,2,1,1,1,0,0],
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-  [1,1,1,1,1,1,2,2,1,1,2,2,1,1,1,0],
-  [1,1,1,1,1,1,2,2,1,1,2,2,1,1,1,0],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
   [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
   [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-  [0,0,0,1,1,0,1,1,1,0,1,1,0,0,0,0],
-  [0,0,1,1,0,0,0,1,0,0,0,1,1,0,0,0],
-  [0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0],
+  [0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0],
+  [0,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0],
+  [0,1,1,0,0,0,1,0,0,1,1,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
 ];
 
-// 死亡フレーム（×目）
 const kiroDead = [
-  [0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0],
-  [0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0],
-  [0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+  [0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0],
+  [0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0],
+  [0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+  [1,1,1,1,2,1,2,1,2,1,2,1,1,1,0,0],
+  [1,1,1,1,1,2,1,1,1,2,1,1,1,1,0,0],
+  [1,1,1,1,2,1,2,1,2,1,2,1,1,1,0,0],
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-  [1,1,1,1,1,2,1,2,1,2,1,2,1,1,1,0],
-  [1,1,1,1,1,1,2,1,1,1,2,1,1,1,1,0],
-  [1,1,1,1,1,2,1,2,1,2,1,2,1,1,1,0],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-  [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-  [0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0],
-  [0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0],
-  [0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+  [0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+  [0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0],
+  [0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0],
+  [0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0],
 ];
 
 function drawSprite(sprite, x, y, pixelSize, glowColor) {
-  if (glowColor) {
-    ctx.shadowColor = glowColor;
-    ctx.shadowBlur = 12;
-  }
+  if (glowColor) { ctx.shadowColor = glowColor; ctx.shadowBlur = 12; }
   for (let row = 0; row < sprite.length; row++) {
     for (let col = 0; col < sprite[row].length; col++) {
       const val = sprite[row][col];
       if (val === 0) continue;
-      if (val === 1) ctx.fillStyle = '#ffffff';
-      else if (val === 2) ctx.fillStyle = '#0a0a0a';
+      ctx.fillStyle = val === 1 ? '#ffffff' : '#0a0a0a';
       ctx.fillRect(x + col * pixelSize, y + row * pixelSize, pixelSize, pixelSize);
     }
   }
   ctx.shadowBlur = 0;
 }
 
-
-
-// ===== Kiroちゃん（おばけだから浮いてる！）=====
-const FLOAT_HEIGHT = 30; // 地面からの浮遊高さ
+// ===== Kiroちゃん（左右移動 + ふわふわ）=====
 const kiro = {
-  x: 80, y: GROUND_Y - FLOAT_HEIGHT, w: 16*PX, h: 16*PX,
-  vy: 0, gravity: 0.5, jumpForce: -12,
-  onGround: true, frame: 0, animTimer: 0,
+  x: W / 2 - 24, y: H - 90, w: 16 * PX, h: 16 * PX,
+  speed: 4.5, frame: 0, animTimer: 0,
   dead: false, deathAnim: 0, floatOffset: 0,
-  baseY: GROUND_Y - FLOAT_HEIGHT, // 浮遊時のベース位置
-
-  jump() {
-    if (this.onGround && !this.dead) {
-      this.vy = this.jumpForce;
-      this.onGround = false;
-    }
-  },
 
   update() {
     if (this.dead) { this.deathAnim++; return; }
-    this.vy += this.gravity;
-    this.y += this.vy;
-    if (this.y >= this.baseY) { this.y = this.baseY; this.vy = 0; this.onGround = true; }
-    // ゆったりふわふわ浮遊（上下に揺れる）
-    this.floatOffset = Math.sin(frameCount * 0.04) * 6;
-    // アニメーション切替（裾のひらひら）
+
+    // 左右移動
+    let moveDir = 0;
+    if (keys.left) moveDir = -1;
+    else if (keys.right) moveDir = 1;
+    else moveDir = touchDir;
+
+    this.x += moveDir * this.speed;
+    // 画面端制限
+    if (this.x < 40) this.x = 40;
+    if (this.x > W - this.w - 10) this.x = W - this.w - 10;
+
+    // ふわふわ
+    this.floatOffset = Math.sin(frameCount * 0.05) * 5;
+
+    // アニメーション
     this.animTimer++;
     if (this.animTimer > 10) { this.animTimer = 0; this.frame = 1 - this.frame; }
   },
 
   draw() {
     ctx.save();
-    const drawY = this.y + this.floatOffset - this.h;
-    let sprite;
-    if (this.dead) sprite = kiroDead;
-    else sprite = this.frame === 0 ? kiroFrameA : kiroFrameB;
+    const drawX = this.x;
+    const drawY = this.y + this.floatOffset;
+    let sprite = this.dead ? kiroDead : (this.frame === 0 ? kiroFrameA : kiroFrameB);
 
     if (this.dead) {
-      ctx.globalAlpha = Math.max(0, 1 - this.deathAnim * 0.02);
-      ctx.translate(this.x + this.w/2, drawY + this.h/2);
-      ctx.rotate(this.deathAnim * 0.1);
-      ctx.translate(-(this.x + this.w/2), -(drawY + this.h/2));
+      ctx.globalAlpha = Math.max(0, 1 - this.deathAnim * 0.025);
+      ctx.translate(drawX + this.w/2, drawY + this.h/2);
+      ctx.rotate(this.deathAnim * 0.12);
+      ctx.translate(-(drawX + this.w/2), -(drawY + this.h/2));
     }
 
-    // おばけの影（地面に薄い楕円）
+    // 影
     if (!this.dead) {
       ctx.fillStyle = 'rgba(139, 92, 246, 0.2)';
       ctx.beginPath();
-      ctx.ellipse(this.x + this.w/2, GROUND_Y - 2, 14, 4, 0, 0, Math.PI * 2);
+      ctx.ellipse(drawX + this.w/2, drawY + this.h + 6, 14, 4, 0, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    drawSprite(sprite, this.x, drawY, PX, 'rgba(255,255,255,0.6)');
+    drawSprite(sprite, drawX, drawY, PX, 'rgba(255,255,255,0.5)');
     ctx.restore();
   }
 };
 
-// ===== スパゲッティコード触手 障害物 =====
-const SPAGHETTI_SPRITE = [
-  [0,0,3,0,0,3,0,0],
-  [0,3,3,0,3,3,0,0],
-  [0,3,0,0,3,0,3,0],
-  [3,3,0,3,3,0,3,0],
-  [3,0,0,3,0,0,3,0],
-  [3,0,3,3,0,3,3,0],
-  [3,3,3,0,0,3,0,0],
-  [3,3,0,0,3,3,0,0],
-  [0,3,0,3,3,0,0,0],
-  [0,3,3,3,0,0,3,0],
-  [0,0,3,3,0,3,3,0],
-  [0,3,3,0,3,3,0,0],
-  [3,3,0,0,3,0,0,0],
-  [3,0,0,3,3,0,0,0],
-  [3,3,3,3,3,3,3,3],
-  [3,3,3,3,3,3,3,3],
+// ===== 障害物（上から降ってくる）=====
+const obstacleTypes = [
+  { name: 'spaghetti', color: '#a855f7', label: 'if(if(if(' },
+  { name: 'todo',      color: '#4ade80', label: '// TODO' },
+  { name: 'error',     color: '#ef4444', label: 'ERROR!' },
+  { name: 'goto',      color: '#f97316', label: 'goto 666' },
+  { name: 'eval',      color: '#ec4899', label: 'eval("")' },
 ];
-
-// TODO怨霊
-const TODO_SPRITE = [
-  [0,0,4,4,4,4,4,4,4,4,0,0],
-  [0,4,4,4,4,4,4,4,4,4,4,0],
-  [4,4,0,0,4,4,4,0,0,4,4,4],
-  [4,4,0,0,4,4,4,0,0,4,4,4],
-  [4,4,4,4,4,4,4,4,4,4,4,4],
-  [4,4,4,4,4,4,4,4,4,4,4,4],
-  [4,4,4,0,4,4,4,4,0,4,4,4],
-  [4,4,4,4,0,0,0,0,4,4,4,4],
-  [0,4,4,4,4,4,4,4,4,4,4,0],
-  [0,0,4,4,4,4,4,4,4,4,0,0],
-];
-
-// デッドコード蜘蛛
-const SPIDER_SPRITE = [
-  [0,5,0,0,0,0,0,5,0,0],
-  [0,0,5,0,0,0,5,0,0,0],
-  [5,0,0,5,5,5,0,0,5,0],
-  [0,5,5,5,5,5,5,5,0,0],
-  [0,0,5,5,5,5,5,0,0,0],
-  [0,5,5,2,5,2,5,5,0,0],
-  [5,0,5,5,5,5,5,0,5,0],
-  [0,0,0,5,5,5,0,0,0,0],
-  [0,0,5,0,5,0,5,0,0,0],
-  [0,5,0,0,0,0,0,5,0,0],
-];
-
-function drawObstacleSprite(sprite, x, y, pixelSize, colorMap) {
-  for (let row = 0; row < sprite.length; row++) {
-    for (let col = 0; col < sprite[row].length; col++) {
-      const val = sprite[row][col];
-      if (val === 0) continue;
-      ctx.fillStyle = colorMap[val] || '#fff';
-      ctx.fillRect(x + col * pixelSize, y + row * pixelSize, pixelSize, pixelSize);
-    }
-  }
-}
 
 class Obstacle {
-  constructor(type) {
-    this.type = type; this.x = W + 20;
-    if (type === 'spaghetti') {
-      this.w = 8 * PX; this.h = 16 * PX;
-      this.y = GROUND_Y - this.h;
-      this.sprite = SPAGHETTI_SPRITE;
-      this.colors = { 3: '#a855f7' }; // 紫触手
-    } else if (type === 'todo') {
-      this.w = 12 * PX; this.h = 10 * PX;
-      this.y = GROUND_Y - this.h - 10;
-      this.sprite = TODO_SPRITE;
-      this.colors = { 4: '#4ade80' }; // 緑のTODO
-      this.floatPhase = Math.random() * Math.PI * 2;
-    } else { // spider
-      this.w = 10 * PX; this.h = 10 * PX;
-      this.y = GROUND_Y - this.h;
-      this.sprite = SPIDER_SPRITE;
-      this.colors = { 5: '#ef4444', 2: '#0a0a0a' }; // 赤蜘蛛
-    }
+  constructor() {
+    const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+    this.color = type.color;
+    this.label = type.label;
+    this.name = type.name;
+    this.w = 30 + Math.random() * 50;
+    this.h = 14 + Math.random() * 10;
+    this.x = 45 + Math.random() * (W - 55 - this.w);
+    this.y = -this.h - 10;
+    this.speed = speed + Math.random() * 1.5;
   }
-  update() {
-    this.x -= speed;
-    if (this.type === 'todo') {
-      this.floatPhase += 0.05;
-    }
-  }
-  draw() {
-    let drawY = this.y;
-    if (this.type === 'todo') drawY += Math.sin(this.floatPhase) * 6;
 
-    // グロー
-    ctx.shadowColor = this.type === 'spaghetti' ? '#a855f7' :
-                      this.type === 'todo' ? '#4ade80' : '#ef4444';
-    ctx.shadowBlur = 8;
-    drawObstacleSprite(this.sprite, this.x, drawY, PX, this.colors);
+  update() {
+    this.y += this.speed;
+  }
+
+  draw() {
+    // ブロック背景
+    ctx.fillStyle = this.color + '30'; // 半透明
+    ctx.fillRect(this.x, this.y, this.w, this.h);
+
+    // 枠線（グロー）
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur = 6;
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(this.x, this.y, this.w, this.h);
     ctx.shadowBlur = 0;
 
-    // ラベルテキスト（8bit風）
-    ctx.fillStyle = this.type === 'spaghetti' ? '#c084fc' :
-                    this.type === 'todo' ? '#86efac' : '#fca5a5';
-    ctx.font = '9px monospace';
+    // テキスト
+    ctx.fillStyle = this.color;
+    ctx.font = '8px monospace';
     ctx.textAlign = 'center';
-    if (this.type === 'spaghetti') ctx.fillText('if(if(if', this.x + this.w/2, drawY - 4);
-    else if (this.type === 'todo') ctx.fillText('//TODO', this.x + this.w/2, drawY - 4);
-    else ctx.fillText('dead()', this.x + this.w/2, drawY - 4);
+    ctx.fillText(this.label, this.x + this.w / 2, this.y + this.h / 2 + 3);
   }
+
   getBounds() {
-    const m = 4;
-    let drawY = this.y;
-    if (this.type === 'todo') drawY += Math.sin(this.floatPhase) * 6;
-    return { x: this.x + m, y: drawY + m, w: this.w - m*2, h: this.h - m*2 };
+    return { x: this.x + 2, y: this.y + 2, w: this.w - 4, h: this.h - 4 };
   }
 }
 
-
-
-// ===== パーティクル（ドット型）=====
+// ===== パーティクル =====
 class Particle {
   constructor(x, y, color) {
     this.x = x; this.y = y;
-    this.vx = (Math.random() - 0.5) * 4;
-    this.vy = -Math.random() * 4 - 1;
+    this.vx = (Math.random() - 0.5) * 5;
+    this.vy = (Math.random() - 0.5) * 5;
     this.life = 1;
     this.decay = 0.03 + Math.random() * 0.02;
     this.size = PX;
     this.color = color;
   }
-  update() { this.x += this.vx; this.y += this.vy; this.vy += 0.15; this.life -= this.decay; }
+  update() { this.x += this.vx; this.y += this.vy; this.life -= this.decay; }
   draw() {
     ctx.globalAlpha = Math.max(0, this.life);
     ctx.fillStyle = this.color;
@@ -283,105 +215,93 @@ class Particle {
   }
 }
 
-// ===== 背景：流れるコード文字列 =====
-const codeLines = [
-  'function(){', 'var x = x;', 'goto 10;', '} catch(e){}',
-  'if(true){if(true){', '// FIXME', 'while(1){', 'eval(code);',
-  'callback(callback(', '} } } } }', 'import *;', 'rm -rf /',
-  'undefined is not', 'segfault', '// hack', 'TODO: later',
+// ===== 背景：コードエディタ風 =====
+const bgCodeLines = [
+  'function haunted() {',
+  '  const ghost = new Kiro();',
+  '  while (true) {',
+  '    if (legacy.exists()) {',
+  '      spaghetti.grow();',
+  '      // TODO: fix later',
+  '      callback(callback(',
+  '        callback(() => {',
+  '    }}}}}',
+  '  var x = undefined;',
+  '  eval(userInput);',
+  '  goto start;',
+  '  } catch(e) { /* ignore */ }',
+  '  rm -rf node_modules',
+  '  import everything from "*"',
+  '  console.log("help");',
+  '  throw new Error("why");',
+  '  // FIXME: 3 years old',
+  '  debt += technical;',
+  '  return null; // maybe',
 ];
 
-const bgTexts = Array.from({length: 12}, () => ({
-  x: Math.random() * W,
-  y: Math.random() * (GROUND_Y - 30),
-  text: codeLines[Math.floor(Math.random() * codeLines.length)],
-  speed: 0.3 + Math.random() * 0.5,
-  alpha: 0.08 + Math.random() * 0.12,
-}));
+let bgScrollOffset = 0;
+const LINE_HEIGHT = 16;
 
-// ===== ネオンサイン "KIRO" =====
-function drawNeonSign() {
-  ctx.save();
-  ctx.font = 'bold 18px monospace';
-  ctx.textAlign = 'right';
-  ctx.shadowColor = '#8b5cf6';
-  ctx.shadowBlur = 15;
-  ctx.fillStyle = '#a78bfa';
-  ctx.fillText('KIRO', W - 20, 25);
-  ctx.shadowBlur = 0;
-  ctx.restore();
-}
-
-// ===== 背景描画 =====
-function drawBackground() {
-  // 暗い紫グラデ
+function drawCodeBackground() {
+  // 背景色
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, '#0f0520');
-  grad.addColorStop(0.6, '#1a0a2e');
+  grad.addColorStop(0, '#0a0215');
   grad.addColorStop(1, '#12061f');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // 木壁テクスチャ（横線）
-  ctx.strokeStyle = 'rgba(80, 40, 100, 0.15)';
-  ctx.lineWidth = 1;
-  for (let y = 0; y < GROUND_Y; y += 20) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  // 行番号ガター
+  ctx.fillStyle = '#150825';
+  ctx.fillRect(0, 0, 36, H);
+  ctx.fillStyle = '#2d0f50';
+  ctx.fillRect(36, 0, 1, H);
+
+  // スクロールするコード行
+  bgScrollOffset = (bgScrollOffset + speed * 0.3) % LINE_HEIGHT;
+
+  ctx.font = '9px monospace';
+  const startLine = Math.floor(frameCount * 0.05) % bgCodeLines.length;
+
+  for (let i = -1; i < H / LINE_HEIGHT + 1; i++) {
+    const y = i * LINE_HEIGHT + bgScrollOffset;
+    const lineIdx = (startLine + i + bgCodeLines.length * 10) % bgCodeLines.length;
+    const displayLineNum = lineNumber + i;
+
+    // 行番号
+    ctx.fillStyle = 'rgba(139, 92, 246, 0.3)';
+    ctx.textAlign = 'right';
+    ctx.fillText(String(displayLineNum).padStart(3, ' '), 32, y + 11);
+
+    // コード
+    ctx.fillStyle = 'rgba(139, 92, 246, 0.12)';
+    ctx.textAlign = 'left';
+    ctx.fillText(bgCodeLines[lineIdx], 42, y + 11);
   }
 
-  // 流れるコード
-  bgTexts.forEach(t => {
-    t.x -= t.speed;
-    if (t.x < -150) { t.x = W + 50; t.text = codeLines[Math.floor(Math.random() * codeLines.length)]; }
-    ctx.globalAlpha = t.alpha;
-    ctx.fillStyle = '#a855f7';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText(t.text, t.x, t.y);
-    ctx.globalAlpha = 1;
-  });
+  if (state === 'playing') lineNumber += speed * 0.02;
+}
 
-  // ネオンサイン
-  drawNeonSign();
+// ===== ネオンサイン =====
+function drawNeonSign() {
+  ctx.save();
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'right';
+  ctx.shadowColor = '#8b5cf6';
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = '#a78bfa';
+  ctx.fillText('KIRO', W - 12, 18);
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
 
-  // 稲光エフェクト
+// ===== 稲光 =====
+function drawFlash() {
   if (flashTimer > 0) {
-    ctx.globalAlpha = flashTimer * 0.15;
+    ctx.globalAlpha = flashTimer * 0.12;
     ctx.fillStyle = '#c084fc';
     ctx.fillRect(0, 0, W, H);
     ctx.globalAlpha = 1;
     flashTimer--;
-  }
-}
-
-// ===== 地面（絡まったケーブル/コード）=====
-function drawGround() {
-  // 地面ベース
-  ctx.fillStyle = '#1a0a2e';
-  ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
-
-  // ケーブル地面ライン
-  ctx.fillStyle = '#3b0764';
-  ctx.fillRect(0, GROUND_Y, W, 3);
-
-  // スパゲッティコード模様（流れる）
-  groundOffset = (groundOffset + speed) % 40;
-  ctx.strokeStyle = 'rgba(139, 92, 246, 0.25)';
-  ctx.lineWidth = 2;
-  for (let x = -groundOffset; x < W + 40; x += 40) {
-    ctx.beginPath();
-    ctx.moveTo(x, GROUND_Y + 8);
-    ctx.quadraticCurveTo(x + 10, GROUND_Y + 18, x + 20, GROUND_Y + 10);
-    ctx.quadraticCurveTo(x + 30, GROUND_Y + 5, x + 40, GROUND_Y + 15);
-    ctx.stroke();
-  }
-  ctx.strokeStyle = 'rgba(168, 85, 247, 0.15)';
-  for (let x = -groundOffset - 20; x < W + 40; x += 40) {
-    ctx.beginPath();
-    ctx.moveTo(x, GROUND_Y + 20);
-    ctx.quadraticCurveTo(x + 15, GROUND_Y + 30, x + 25, GROUND_Y + 22);
-    ctx.quadraticCurveTo(x + 35, GROUND_Y + 15, x + 40, GROUND_Y + 28);
-    ctx.stroke();
   }
 }
 
@@ -392,19 +312,7 @@ function drawHUD() {
   document.getElementById('hi-score').textContent = hiScore;
 }
 
-// ===== ゲームロジック =====
-function randInt(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
-
-function spawnObstacle() {
-  const roll = Math.random();
-  let type;
-  if (score < 200) type = roll < 0.5 ? 'spaghetti' : roll < 0.8 ? 'todo' : 'spider';
-  else if (score < 600) type = roll < 0.35 ? 'spaghetti' : roll < 0.7 ? 'todo' : 'spider';
-  else type = ['spaghetti', 'todo', 'spider'][randInt(0, 2)];
-  obstacles.push(new Obstacle(type));
-  nextObstacleIn = randInt(60, 120) - Math.min(35, Math.floor(score / 80));
-}
-
+// ===== 衝突判定 =====
 function checkCollision(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
@@ -412,39 +320,54 @@ function checkCollision(a, b) {
 // ===== メインループ =====
 function gameLoop() {
   ctx.clearRect(0, 0, W, H);
-  drawBackground();
-  drawGround();
+
+  drawCodeBackground();
+  drawNeonSign();
+  drawFlash();
 
   if (state === 'playing') {
     frameCount++;
-    score = Math.floor(frameCount / 5);
+    score = Math.floor(frameCount / 4);
     if (score > hiScore) hiScore = score;
-    speed = 4 + Math.floor(score / 150) * 0.6;
+    speed = 2.5 + Math.floor(score / 100) * 0.4;
 
-    // 稲光（ランダム）
-    if (Math.random() < 0.003) flashTimer = 4;
+    // 稲光
+    if (Math.random() < 0.004) flashTimer = 3;
 
-    // 障害物
+    // 障害物スポーン
     nextObstacleIn--;
-    if (nextObstacleIn <= 0) spawnObstacle();
+    if (nextObstacleIn <= 0) {
+      obstacles.push(new Obstacle());
+      nextObstacleIn = Math.max(15, 50 - Math.floor(score / 50) * 3);
+    }
+
+    // 障害物更新
     obstacles.forEach(o => o.update());
-    obstacles = obstacles.filter(o => o.x + o.w > -30);
+    obstacles = obstacles.filter(o => o.y < H + 20);
 
     // 当たり判定
-    const kb = { x: kiro.x + 6, y: kiro.y + kiro.floatOffset - kiro.h + 6, w: kiro.w - 12, h: kiro.h - 10 };
+    const kb = {
+      x: kiro.x + 6,
+      y: kiro.y + kiro.floatOffset + 6,
+      w: kiro.w - 12,
+      h: kiro.h - 12
+    };
     for (const o of obstacles) {
-      if (checkCollision(kb, o.getBounds())) { triggerGameOver(); break; }
+      if (checkCollision(kb, o.getBounds())) {
+        triggerGameOver();
+        break;
+      }
     }
 
     // パーティクル
     particles.forEach(p => p.update());
     particles = particles.filter(p => p.life > 0);
-    // ゴーストの軌跡パーティクル
-    if (frameCount % 8 === 0) {
+    // ゴーストの軌跡
+    if (frameCount % 6 === 0) {
       particles.push(new Particle(
-        kiro.x + Math.random() * kiro.w,
-        kiro.y + kiro.floatOffset - kiro.h/2,
-        `hsl(${260 + Math.random() * 40}, 80%, 70%)`
+        kiro.x + kiro.w/2 + (Math.random()-0.5)*10,
+        kiro.y + kiro.floatOffset + kiro.h,
+        `hsl(${260 + Math.random()*40}, 80%, 70%)`
       ));
     }
 
@@ -452,8 +375,8 @@ function gameLoop() {
   }
 
   // 描画
-  particles.forEach(p => p.draw());
   obstacles.forEach(o => o.draw());
+  particles.forEach(p => p.draw());
   kiro.draw();
   drawHUD();
 
@@ -462,10 +385,11 @@ function gameLoop() {
 
 // ===== ゲーム開始 / ゲームオーバー =====
 function startGame() {
-  score = 0; frameCount = 0; speed = 4;
-  obstacles = []; particles = []; nextObstacleIn = 90; groundOffset = 0;
-  kiro.y = kiro.baseY; kiro.vy = 0; kiro.onGround = true;
-  kiro.dead = false; kiro.deathAnim = 0; kiro.frame = 0; kiro.animTimer = 0;
+  score = 0; frameCount = 0; speed = 2.5;
+  obstacles = []; particles = []; nextObstacleIn = 60;
+  lineNumber = 1; bgScrollOffset = 0;
+  kiro.x = W/2 - kiro.w/2; kiro.dead = false; kiro.deathAnim = 0;
+  kiro.frame = 0; kiro.animTimer = 0;
   document.getElementById('start-screen').classList.add('hidden');
   document.getElementById('gameover-screen').classList.add('hidden');
   state = 'playing';
@@ -473,36 +397,58 @@ function startGame() {
 
 function triggerGameOver() {
   kiro.dead = true; state = 'gameover';
-  // 爆発パーティクル
   for (let i = 0; i < 40; i++) {
     particles.push(new Particle(
-      kiro.x + kiro.w/2, kiro.y - kiro.h/2,
-      `hsl(${Math.random() * 60 + 270}, 90%, 60%)`
+      kiro.x + kiro.w/2, kiro.y + kiro.h/2,
+      `hsl(${Math.random()*60 + 270}, 90%, 60%)`
     ));
   }
-  flashTimer = 6;
+  flashTimer = 5;
   setTimeout(() => {
     document.getElementById('gameover-screen').classList.remove('hidden');
     document.getElementById('final-score-text').textContent = `${score} Lines Survived`;
     const nr = document.getElementById('new-record');
     if (score >= hiScore && score > 0) nr.classList.remove('hidden');
     else nr.classList.add('hidden');
-  }, 1000);
+  }, 800);
 }
 
-// ===== 入力 =====
+// ===== キーボード入力 =====
 document.addEventListener('keydown', e => {
-  if (e.code === 'Space' || e.code === 'ArrowUp') {
-    e.preventDefault();
-    if (state === 'playing') kiro.jump();
-  }
+  if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+  if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
 });
+document.addEventListener('keyup', e => {
+  if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+  if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+});
+
+// ===== タッチ入力（左半分/右半分タップ）=====
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
-  if (state === 'playing') kiro.jump();
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const tx = (touch.clientX - rect.left) / rect.width * W;
+  touchDir = tx < W / 2 ? -1 : 1;
 }, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  touchDir = 0;
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const tx = (touch.clientX - rect.left) / rect.width * W;
+  touchDir = tx < W / 2 ? -1 : 1;
+}, { passive: false });
+
+// ===== ボタン =====
 document.getElementById('start-btn').addEventListener('click', startGame);
 document.getElementById('retry-btn').addEventListener('click', startGame);
 
+// ===== 起動 =====
 state = 'idle';
 gameLoop();
