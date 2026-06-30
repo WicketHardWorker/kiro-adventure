@@ -21,7 +21,7 @@ let touchDir = 0; // -1 left, 0 none, 1 right
 
 // ===== Kiroゴースト 画像読み込み =====
 const kiroImg = new Image();
-kiroImg.src = 'kiro-ghost.jpg';
+kiroImg.src = 'kiro-ghost.PNG';
 let kiroImgReady = false;
 kiroImg.onload = () => { kiroImgReady = true; };
 
